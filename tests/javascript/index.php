@@ -4781,6 +4781,35 @@ if ($mysql) {
         }, 2000);
     });
 
+    test("Test API - optOut", function () {
+        expect(25);
+
+        var token = getToken();
+
+        var tracker = Piwik.getTracker();
+        strictEqual(tracker.isUserOptedOut(), false, "isUserOptedOut(), should be false by default" );
+
+        tracker.trackRequest('myFoo=bar&baz=1&token=' + token);
+
+        tracker.optUserOut();
+        strictEqual(tracker.isUserOptedOut(), true, "optUserOut(), should have set the cookie" );
+
+        tracker.trackRequest('myFoo=bar&baz=2&token=' + token);
+
+        tracker.forgetUserOptedOut();
+
+        tracker.trackRequest('myFoo=bar&baz=3&token=' + token);
+
+        stop();
+        setTimeout(function() {
+            var results = fetchTrackedRequests(token);
+            strictEqual(true, results[0].indexOf('myFoo=bar&baz=1') >= 0, "should have sent first request since user was not opted out");
+            strictEqual(true, results[1].indexOf('myFoo=bar&baz=2') < 0, "should not have sent second request since user was opted out");
+            strictEqual(true, results[2].indexOf('myFoo=bar&baz=3') >= 0, "should have sent third request since user was opted back in");
+            start();
+        }, 2000);
+    });
+
 
 <?php
 }

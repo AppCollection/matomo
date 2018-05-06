@@ -3535,6 +3535,10 @@ if (typeof window.Piwik !== 'object') {
                     fallbackToGet = true;
                 }
 
+                if (isUserOptedOut()) {
+                    return;
+                }
+
                 if (isPageUnloading && sendPostRequestViaSendBeacon(request)) {
                     return;
                 }
@@ -5548,6 +5552,10 @@ if (typeof window.Piwik !== 'object') {
                 browserFeatures.res = parseInt(width, 10) + 'x' + parseInt(height, 10);
             }
 
+            function isUserOptedOut() {
+                return getCookie('piwik_ignore') === '*';
+            }
+
             /*<DEBUG>*/
             /*
              * Register a test hook. Using eval() permits access to otherwise
@@ -7279,6 +7287,33 @@ if (typeof window.Piwik !== 'object') {
             this.forgetConsentGiven = function () {
                 deleteCookie('consent', configCookiePath, configCookieDomain);
                 this.requireConsent();
+            };
+
+            /**
+             * Detects whether a user has opted out.
+             *
+             * @returns {boolean}
+             */
+            this.isUserOptedOut = isUserOptedOut;
+
+            /**
+             * Opts a user out from tracking. If called, no tracker requests will be sent to Matomo for the current
+             * user.
+             *
+             * Note: using the opt out strategy conflicts with the consent features, since here we are assuming
+             * consent. It also follows that depending on where you/your users are located, using opt-out instead
+             * requiring consent may affect how well you comply with relevant privacy laws (ie, GDPR).
+             */
+            this.optUserOut = function () {
+                setCookie('piwik_ignore', '*', null, configCookiePath, configCookieDomain, configCookieIsSecure);
+            };
+
+            /**
+             * Forgets that a user opted out. After calling this method, tracking requests will begin again to
+             * be sent to matomo.
+             */
+            this.forgetUserOptedOut = function () {
+                deleteCookie('piwik_ignore');
             };
 
             Piwik.trigger('TrackerSetup', [this]);
